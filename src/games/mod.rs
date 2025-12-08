@@ -1,6 +1,7 @@
 pub mod reading_speed;
 pub mod word_memory;
 pub mod text_comprehension;
+pub mod inumbs;
 
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -23,6 +24,9 @@ pub struct GameConfig {
     pub difficulty: Difficulty,
     pub duration: Duration,
     pub word_count: usize,
+    /// Whether after showing the numbers the game should present input boxes to fill
+    /// (used by the iNumbs / retentiva training).
+    pub fill_boxes: bool,
 }
 
 impl Default for GameConfig {
@@ -31,6 +35,7 @@ impl Default for GameConfig {
             difficulty: Difficulty::Medium,
             duration: Duration::from_secs(30),
             word_count: 100,
+            fill_boxes: false,
         }
     }
 }
@@ -65,6 +70,11 @@ pub enum GameDetails {
     TextComprehension { 
         questions_correct: usize, 
         total_questions: usize,
+    },
+    INumbs {
+        correct: usize,
+        total: usize,
+        time_taken: Duration,
     },
 }
 

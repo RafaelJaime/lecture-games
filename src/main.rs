@@ -22,7 +22,8 @@ pub enum AppState {
 pub enum GameType {
     ReadingSpeed,
     WordMemory,
-    TextComprehension,
+        TextComprehension,
+        INumbs,
 }
 
 impl GameType {
@@ -31,6 +32,7 @@ impl GameType {
             GameType::ReadingSpeed => "Lectura Rápida",
             GameType::WordMemory => "Memoria de Palabras",
             GameType::TextComprehension => "Comprensión de Texto",
+            GameType::INumbs => "iNumbs (Números / Rellenar casilleros)",
         }
     }
     
@@ -39,6 +41,7 @@ impl GameType {
             GameType::ReadingSpeed => "Lee el texto en el tiempo configurado y después escríbelo",
             GameType::WordMemory => "Memoriza las palabras que aparecen y después escríbelas",
             GameType::TextComprehension => "Lee el texto y responde las preguntas",
+            GameType::INumbs => "Memoriza secuencias numéricas, opcionalmente completa casilleros",
         }
     }
 }
@@ -56,7 +59,8 @@ impl Default for SuperlecturaApp {
         let mut configs = HashMap::new();
         configs.insert(GameType::ReadingSpeed, GameConfig::default());
         configs.insert(GameType::WordMemory, GameConfig::default());
-        configs.insert(GameType::TextComprehension, GameConfig::default());
+    configs.insert(GameType::TextComprehension, GameConfig::default());
+    configs.insert(GameType::INumbs, GameConfig::default());
         
         Self {
             state: AppState::GameSelection,

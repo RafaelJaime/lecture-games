@@ -22,6 +22,7 @@ impl SuperlecturaApp {
             GameType::ReadingSpeed,
             GameType::WordMemory,
             GameType::TextComprehension,
+            GameType::INumbs,
         ];
         for game_type in &games {
             ui.group(|ui| {
@@ -50,6 +51,7 @@ impl SuperlecturaApp {
                                 GameType::ReadingSpeed => Box::new(crate::games::reading_speed::ReadingSpeedGame::new(config)),
                                 GameType::WordMemory => Box::new(crate::games::word_memory::WordMemoryGame::new(config)),
                                 GameType::TextComprehension => Box::new(crate::games::text_comprehension::TextComprehensionGame::new(config)),
+                                GameType::INumbs => Box::new(crate::games::inumbs::INumbsGame::new(config)),
                             };
                             
                             self.current_game = Some(game);
@@ -98,6 +100,7 @@ impl SuperlecturaApp {
                     GameType::ReadingSpeed => Box::new(crate::games::reading_speed::ReadingSpeedGame::new(config.clone())),
                     GameType::WordMemory => Box::new(crate::games::word_memory::WordMemoryGame::new(config.clone())),
                     GameType::TextComprehension => Box::new(crate::games::text_comprehension::TextComprehensionGame::new(config.clone())),
+                    GameType::INumbs => Box::new(crate::games::inumbs::INumbsGame::new(config.clone())),
                 };
                 
                 self.current_game = Some(game);
@@ -149,14 +152,17 @@ impl SuperlecturaApp {
             ui.add_space(20.0);
             match &result.details {
                 GameDetails::ReadingSpeed { words_correct, total_words, .. } => {
-                    ui.label(format!("Palabras correctas: {} de {}", words_correct, total_words));
-                }
+                        ui.label(format!("Palabras correctas: {} de {}", words_correct, total_words));
+                    }
                 GameDetails::WordMemory { words_correct, original_words, .. } => {
                     ui.label(format!("Palabras recordadas: {} de {}", words_correct, original_words.len()));
                 }
-                GameDetails::TextComprehension { questions_correct, total_questions, .. } => {
-                    ui.label(format!("Respuestas correctas: {} de {}", questions_correct, total_questions));
-                }
+                    GameDetails::TextComprehension { questions_correct, total_questions, .. } => {
+                        ui.label(format!("Respuestas correctas: {} de {}", questions_correct, total_questions));
+                    }
+                    GameDetails::INumbs { correct, total, .. } => {
+                        ui.label(format!("Números correctos: {} de {}", correct, total));
+                    }
             }
             
             ui.add_space(30.0);
@@ -207,7 +213,7 @@ impl SuperlecturaApp {
             ui.label(format!("Puntuación promedio: {:.1}", avg_score));
             
             // Estadísticas por juego
-            for game_type in [GameType::ReadingSpeed, GameType::WordMemory, GameType::TextComprehension] {
+            for game_type in [GameType::ReadingSpeed, GameType::WordMemory, GameType::TextComprehension, GameType::INumbs] {
                 let game_results: Vec<_> = results.iter()
                     .filter(|r| r.game_type == game_type)
                     .collect();
@@ -251,17 +257,20 @@ impl SuperlecturaApp {
                             });
                             
                             ui.vertical(|ui| {
-                                match &result.details {
-                                    GameDetails::ReadingSpeed { words_correct, total_words, .. } => {
-                                        ui.label(format!("Palabras: {}/{}", words_correct, total_words));
-                                    }
-                                    GameDetails::WordMemory { words_correct, original_words, .. } => {
-                                        ui.label(format!("Memorizado: {}/{}", words_correct, original_words.len()));
-                                    }
-                                    GameDetails::TextComprehension { questions_correct, total_questions, .. } => {
-                                        ui.label(format!("Respuestas: {}/{}", questions_correct, total_questions));
-                                    }
-                                }
+                                        match &result.details {
+                                                GameDetails::ReadingSpeed { words_correct, total_words, .. } => {
+                                                    ui.label(format!("Palabras: {}/{}", words_correct, total_words));
+                                                }
+                                                GameDetails::WordMemory { words_correct, original_words, .. } => {
+                                                    ui.label(format!("Memorizado: {}/{}", words_correct, original_words.len()));
+                                                }
+                                                GameDetails::TextComprehension { questions_correct, total_questions, .. } => {
+                                                    ui.label(format!("Respuestas: {}/{}", questions_correct, total_questions));
+                                                }
+                                                GameDetails::INumbs { correct, total, .. } => {
+                                                    ui.label(format!("Números: {}/{}", correct, total));
+                                                }
+                                            }
                             });
                         });
                     });

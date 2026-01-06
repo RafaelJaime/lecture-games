@@ -213,7 +213,8 @@ impl Game for WordMemoryGame {
                 
                 ui.add_space(10.0);
                 
-                if ui.button("Terminar").clicked() {
+                let enter_pressed = ui.input(|i| i.key_pressed(egui::Key::Enter));
+                if ui.button("Terminar").clicked() || enter_pressed {
                     // Calcular palabras correctas para el resumen
                     let user_words: Vec<String> = self.user_input
                         .split_whitespace()

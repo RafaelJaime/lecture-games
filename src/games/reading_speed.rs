@@ -413,7 +413,8 @@ impl Game for ReadingSpeedGame {
                 
                 ui.add_space(20.0);
                 
-                if ui.button("Confirmar respuesta").clicked() {
+                let enter_pressed = ui.input(|i| i.key_pressed(egui::Key::Enter));
+                if ui.button("Confirmar respuesta").clicked() || enter_pressed {
                     self.next_round();
                 }
             }

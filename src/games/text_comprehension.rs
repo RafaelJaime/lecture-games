@@ -241,7 +241,8 @@ impl Game for TextComprehensionGame {
                                 self.current_question += 1;
                             }
                         } else {
-                            if ui.button("Terminar").clicked() {
+                            let enter_pressed = ui.input(|i| i.key_pressed(egui::Key::Enter));
+                            if ui.button("Terminar").clicked() || enter_pressed {
                                 self.finished = true;
                             }
                         }

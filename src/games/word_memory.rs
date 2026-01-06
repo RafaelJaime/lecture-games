@@ -13,6 +13,9 @@ pub struct WordMemoryGame {
     finished: bool,
     word_display_time: Duration,
     last_word_time: Option<Instant>,
+    focus_input: bool,
+    matched_words: Vec<String>,
+    should_go_to_menu: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -41,6 +44,9 @@ impl WordMemoryGame {
             finished: false,
             word_display_time: word_time,
             last_word_time: None,
+            focus_input: false,
+            matched_words: Vec::new(),
+            should_go_to_menu: false,
         }
     }
 
@@ -100,19 +106,38 @@ impl WordMemoryGame {
 
 impl Game for WordMemoryGame {
     fn update(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
+        if self.should_go_to_menu {
+            return;
+        }
+        
         match self.state {
             MemoryState::Instructions => {
+                ui.horizontal(|ui| {
+                    if ui.button("← Menú").clicked() {
+                        self.should_go_to_menu = true;
+                    }
+                });
+                ui.separator();
+                ui.add_space(10.0);
+                
                 ui.heading("Juego de Memoria de Palabras");
                 ui.separator();
                 
-                ui.label(format!("Palabras a memorizar: {}", self.words_to_remember.len()));
-                ui.label(format!("Tiempo por palabra: {:.1}s", self.word_display_time.as_secs_f32()));
+                ui.group(|ui| {
+                    ui.label("📋 Instrucciones:");
+                    ui.label("1. Se mostrarán palabras una por una");
+                    ui.label("2. Memoriza todas las palabras que veas");
+                    ui.label("3. Después escribe todas las palabras que recuerdes");
+                });
+                
                 ui.add_space(20.0);
                 
-                ui.label("Instrucciones:");
-                ui.label("1. Se mostrarán palabras una por una");
-                ui.label("2. Memoriza todas las palabras que veas");
-                ui.label("3. Después escribe todas las palabras que recuerdes");
+                ui.group(|ui| {
+                    ui.label("⚙️ Configuración:");
+                    ui.add_space(10.0);
+                    ui.label(format!("Palabras a memorizar: {}", self.words_to_remember.len()));
+                    ui.label(format!("Tiempo por palabra: {:.1}s", self.word_display_time.as_secs_f32()));
+                });
                 
                 ui.add_space(20.0);
                 
@@ -130,6 +155,7 @@ impl Game for WordMemoryGame {
                         if self.current_word_index >= self.words_to_remember.len() {
                             self.state = MemoryState::Recall;
                             self.start_time = Some(Instant::now());
+                            self.focus_input = true;
                             return;
                         }
                         self.last_word_time = Some(Instant::now());
@@ -154,21 +180,56 @@ impl Game for WordMemoryGame {
             }
             
             MemoryState::Recall => {
+                ui.horizontal(|ui| {
+                    if ui.button("← Menú").clicked() {
+                        self.should_go_to_menu = true;
+                    }
+                });
+                ui.separator();
+                ui.add_space(10.0);
+                
                 ui.heading("Escribe las palabras que recuerdas:");
                 ui.separator();
                 
                 ui.label("Escribe todas las palabras separadas por espacios:");
                 
-                ui.add(
-                    egui::TextEdit::multiline(&mut self.user_input)
-                        .desired_rows(8)
-                        .desired_width(f32::INFINITY)
-                        .hint_text("palabra1 palabra2 palabra3...")
-                );
+                let text_edit = egui::TextEdit::multiline(&mut self.user_input)
+                    .desired_rows(8)
+                    .desired_width(f32::INFINITY)
+                    .hint_text("palabra1 palabra2 palabra3...");
+                let response = ui.add(text_edit);
+                
+                // Autofocus
+                if self.focus_input {
+                    response.request_focus();
+                    self.focus_input = false;
+                }
+                
+                ui.add_space(10.0);
+                
+                // Mostrar cuántas palabras ha escrito el usuario
+                let user_word_count = self.user_input.split_whitespace().count();
+                ui.label(format!("Palabras escritas: {} / {}", user_word_count, self.words_to_remember.len()));
                 
                 ui.add_space(10.0);
                 
                 if ui.button("Terminar").clicked() {
+                    // Calcular palabras correctas para el resumen
+                    let user_words: Vec<String> = self.user_input
+                        .split_whitespace()
+                        .map(|s| s.to_lowercase())
+                        .collect();
+                    
+                    let original_words: Vec<String> = self.words_to_remember
+                        .iter()
+                        .map(|s| s.to_lowercase())
+                        .collect();
+                    
+                    self.matched_words = user_words.iter()
+                        .filter(|w| original_words.contains(w))
+                        .cloned()
+                        .collect();
+                    
                     self.finished = true;
                 }
             }
@@ -178,6 +239,8 @@ impl Game for WordMemoryGame {
     fn get_state(&self) -> GameState {
         if self.finished {
             GameState::Finished
+        } else if self.should_go_to_menu {
+            GameState::Aborted
         } else {
             GameState::Playing
         }
@@ -189,7 +252,7 @@ impl Game for WordMemoryGame {
         }
         
         let accuracy = self.calculate_accuracy();
-        let words_correct = (accuracy * self.words_to_remember.len() as f32) as usize;
+        let words_correct = self.matched_words.len();
         
         Some(GameResult {
             game_type: crate::GameType::WordMemory,
@@ -203,6 +266,6 @@ impl Game for WordMemoryGame {
     }
 
     fn needs_repaint(&self) -> bool {
-        matches!(self.state, MemoryState::ShowingWords) && !self.finished
+        matches!(self.state, MemoryState::ShowingWords) && !self.finished && !self.should_go_to_menu
     }
 }

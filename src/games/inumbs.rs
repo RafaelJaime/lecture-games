@@ -16,6 +16,7 @@ pub struct INumbsGame {
     should_go_to_menu: bool,
     correct_answers: usize,
     overall_start: Option<Instant>,
+    focus_input: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -41,6 +42,7 @@ impl INumbsGame {
             should_go_to_menu: false,
             correct_answers: 0,
             overall_start: None,
+            focus_input: false,
         }
     }
 
@@ -157,6 +159,7 @@ impl Game for INumbsGame {
                         // finished showing all numbers at once
                         if self.config.fill_boxes {
                             self.state = INumbsState::Filling;
+                            self.focus_input = true;
                         } else {
                             self.calculate_result();
                             self.finished = true;
@@ -212,7 +215,14 @@ impl Game for INumbsGame {
                         for col in 0..cols {
                             let idx = row * cols + col;
                             if idx >= self.total_count { break; }
-                            ui.add(egui::TextEdit::singleline(&mut self.user_inputs[idx]).desired_width(60.0));
+                            let text_edit = egui::TextEdit::singleline(&mut self.user_inputs[idx]).desired_width(60.0);
+                            let response = ui.add(text_edit);
+                            
+                            // Autofocus on first input
+                            if self.focus_input && idx == 0 {
+                                response.request_focus();
+                                self.focus_input = false;
+                            }
                         }
                     });
                 }

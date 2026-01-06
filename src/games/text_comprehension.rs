@@ -11,6 +11,7 @@ pub struct TextComprehensionGame {
     current_question: usize,
     answers: Vec<String>,
     finished: bool,
+    should_go_to_menu: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -40,6 +41,7 @@ impl TextComprehensionGame {
             current_question: 0,
             answers: Vec::new(),
             finished: false,
+            should_go_to_menu: false,
         }
     }
 
@@ -132,18 +134,37 @@ impl TextComprehensionGame {
 
 impl Game for TextComprehensionGame {
     fn update(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
+        if self.should_go_to_menu {
+            return;
+        }
+        
         match self.state {
             ComprehensionState::Instructions => {
+                ui.horizontal(|ui| {
+                    if ui.button("← Menú").clicked() {
+                        self.should_go_to_menu = true;
+                    }
+                });
+                ui.separator();
+                ui.add_space(10.0);
+                
                 ui.heading("Juego de Comprensión de Texto");
                 ui.separator();
                 
-                ui.label(format!("Preguntas: {}", self.questions.len()));
+                ui.group(|ui| {
+                    ui.label("📋 Instrucciones:");
+                    ui.label("1. Lee el texto cuidadosamente");
+                    ui.label("2. Responde las preguntas sobre el texto");
+                    ui.label("3. Selecciona la respuesta correcta");
+                });
+                
                 ui.add_space(20.0);
                 
-                ui.label("Instrucciones:");
-                ui.label("1. Lee el texto cuidadosamente");
-                ui.label("2. Responde las preguntas sobre el texto");
-                ui.label("3. Selecciona la respuesta correcta");
+                ui.group(|ui| {
+                    ui.label("⚙️ Configuración:");
+                    ui.add_space(10.0);
+                    ui.label(format!("Preguntas: {}", self.questions.len()));
+                });
                 
                 ui.add_space(20.0);
                 
@@ -154,6 +175,14 @@ impl Game for TextComprehensionGame {
             }
             
             ComprehensionState::Reading => {
+                ui.horizontal(|ui| {
+                    if ui.button("← Menú").clicked() {
+                        self.should_go_to_menu = true;
+                    }
+                });
+                ui.separator();
+                ui.add_space(10.0);
+                
                 ui.heading("Lee el siguiente texto:");
                 ui.separator();
                 
@@ -170,6 +199,14 @@ impl Game for TextComprehensionGame {
             }
             
             ComprehensionState::Questions => {
+                ui.horizontal(|ui| {
+                    if ui.button("← Menú").clicked() {
+                        self.should_go_to_menu = true;
+                    }
+                });
+                ui.separator();
+                ui.add_space(10.0);
+                
                 ui.heading(format!("Pregunta {} de {}", 
                     self.current_question + 1, 
                     self.questions.len()));
@@ -217,6 +254,8 @@ impl Game for TextComprehensionGame {
     fn get_state(&self) -> GameState {
         if self.finished {
             GameState::Finished
+        } else if self.should_go_to_menu {
+            GameState::Aborted
         } else {
             GameState::Playing
         }

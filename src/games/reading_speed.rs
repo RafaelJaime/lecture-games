@@ -19,6 +19,7 @@ pub struct ReadingSpeedGame {
     finished: bool,
     should_go_to_menu: bool,
     base_digit_count: usize,
+    focus_input: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -56,6 +57,7 @@ impl ReadingSpeedGame {
             finished: false,
             should_go_to_menu: false,
             base_digit_count: digit_count,
+            focus_input: false,
         }
     }
 
@@ -193,6 +195,7 @@ impl ReadingSpeedGame {
             self.number_to_remember = Self::generate_number(next_digit_count);
             self.state = NumberState::ShowingNumber;
             self.start_time = Some(Instant::now());
+            self.focus_input = true;
         }
     }
 
@@ -316,6 +319,7 @@ impl Game for ReadingSpeedGame {
                     if elapsed >= self.display_time {
                         self.state = NumberState::Writing;
                         self.start_time = Some(Instant::now());
+                        self.focus_input = true;
                         return;
                     }
                     
@@ -366,11 +370,16 @@ impl Game for ReadingSpeedGame {
                 
                 ui.horizontal(|ui| {
                     ui.label("Tu respuesta:");
-                    ui.add(
-                        egui::TextEdit::singleline(&mut self.user_input)
-                            .desired_width(200.0)
-                            .font(egui::TextStyle::Heading)
-                    );
+                    let text_edit = egui::TextEdit::singleline(&mut self.user_input)
+                        .desired_width(200.0)
+                        .font(egui::TextStyle::Heading);
+                    let response = ui.add(text_edit);
+                    
+                    // Autofocus: request focus when entering this state
+                    if self.focus_input {
+                        response.request_focus();
+                        self.focus_input = false;
+                    }
                 });
                 
                 ui.add_space(20.0);
@@ -388,7 +397,7 @@ impl Game for ReadingSpeedGame {
                         self.correct_answers, 
                         self.round_results.len()));
 
-                    // Mostrar resumen de la última ronda para aprovechar los campos almacenados
+                    // Mostrar resumen de la última ronda
                     if let Some(last) = self.round_results.last() {
                         ui.add_space(10.0);
                         ui.separator();
@@ -397,7 +406,7 @@ impl Game for ReadingSpeedGame {
                         ui.label(format!("Tu respuesta: {}", last.user_answer));
                         ui.label(format!(
                             "Resultado: {}",
-                            if last.correct { "Correcto" } else { "Incorrecto" }
+                            if last.correct { "✅ Correcto" } else { "❌ Incorrecto" }
                         ));
                     }
                 }

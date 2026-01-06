@@ -387,6 +387,19 @@ impl Game for ReadingSpeedGame {
                     ui.label(format!("Correctas: {} / {}", 
                         self.correct_answers, 
                         self.round_results.len()));
+
+                    // Mostrar resumen de la última ronda para aprovechar los campos almacenados
+                    if let Some(last) = self.round_results.last() {
+                        ui.add_space(10.0);
+                        ui.separator();
+                        ui.label("Último resultado:");
+                        ui.label(format!("Número mostrado: {}", last.number));
+                        ui.label(format!("Tu respuesta: {}", last.user_answer));
+                        ui.label(format!(
+                            "Resultado: {}",
+                            if last.correct { "Correcto" } else { "Incorrecto" }
+                        ));
+                    }
                 }
                 
                 ui.add_space(20.0);

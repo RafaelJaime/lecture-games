@@ -228,8 +228,7 @@ impl Game for INumbsGame {
                 }
 
                 ui.add_space(20.0);
-                let enter_pressed = ui.input(|i| i.key_pressed(egui::Key::Enter));
-                if ui.button("Confirmar").clicked() || enter_pressed {
+                if button_with_enter(ui, "Confirmar") {
                     self.calculate_result();
                     self.finished = true;
                 }

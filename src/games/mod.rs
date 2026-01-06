@@ -84,3 +84,8 @@ pub trait Game {
     fn get_result(&self) -> Option<GameResult>;
     fn needs_repaint(&self) -> bool { false }
 }
+
+pub fn button_with_enter(ui: &mut egui::Ui, text: &str) -> bool {
+    let enter_pressed = ui.input(|i| i.key_pressed(egui::Key::Enter));
+    ui.button(text).clicked() || enter_pressed
+}

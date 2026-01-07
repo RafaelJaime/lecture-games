@@ -1,10 +1,12 @@
+//! Persistencia de datos
+
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use crate::games::{GameResult, GameConfig};
-use crate::GameType;
+use super::{GameResult, GameConfig, GameType};
 
+/// Almacenamiento persistente de la aplicación
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GameStorage {
     pub results: Vec<GameResult>,
@@ -13,16 +15,14 @@ pub struct GameStorage {
 
 impl GameStorage {
     pub fn new() -> Self {
-        let storage = Self {
-            results: Vec::new(),
-            configs: HashMap::new(),
-        };
-        
         if let Ok(loaded) = Self::load() {
             return loaded;
         }
         
-        storage
+        Self {
+            results: Vec::new(),
+            configs: HashMap::new(),
+        }
     }
 
     pub fn save_result(&mut self, result: GameResult) {
@@ -48,6 +48,7 @@ impl GameStorage {
         if results.is_empty() {
             return GameStats::default();
         }
+        
         let total_games = results.len();
         let best_score = results.iter().map(|r| r.score).fold(0.0f32, |a, b| a.max(b));
         
@@ -55,6 +56,15 @@ impl GameStorage {
             total_games,
             best_score,
         }
+    }
+
+    pub fn get_all_results(&self) -> Vec<GameResult> {
+        self.results.clone()
+    }
+
+    pub fn clear_all_results(&mut self) {
+        self.results.clear();
+        self.save().ok();
     }
 
     fn get_save_path() -> PathBuf {
@@ -80,28 +90,17 @@ impl GameStorage {
         let storage: GameStorage = serde_json::from_str(&json)?;
         Ok(storage)
     }
+}
 
-    pub fn get_all_results(&self) -> Vec<GameResult> {
-        self.results.clone()
-    }
-
-    pub fn clear_all_results(&mut self) {
-        self.results.clear();
-        self.save().ok();
+impl Default for GameStorage {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
-#[derive(Debug, Clone)]
+/// Estadísticas de un juego
+#[derive(Debug, Clone, Default)]
 pub struct GameStats {
     pub total_games: usize,
     pub best_score: f32,
-}
-
-impl Default for GameStats {
-    fn default() -> Self {
-        Self {
-            total_games: 0,
-            best_score: 0.0,
-        }
-    }
 }

@@ -1,73 +1,27 @@
 use eframe::egui;
-use std::collections::HashMap;
 
+// Módulos MVC
+mod models;
+mod views;
+mod controllers;
 mod games;
-mod storage;
-mod ui;
 mod utils;
 
-use games::*;
-use storage::*;
+// Re-exportar tipos públicos desde models
+pub use models::*;
+pub use games::Game;
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum AppState {
-    GameSelection,
-    GameConfig(GameType),
-    Playing(GameType),
-    Results,
-    History,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-pub enum GameType {
-    ReadingSpeed,
-    WordMemory,
-        TextComprehension,
-        INumbs,
-}
-
-impl GameType {
-    fn name(&self) -> &str {
-        match self {
-            GameType::ReadingSpeed => "Lectura Rápida",
-            GameType::WordMemory => "Memoria de Palabras",
-            GameType::TextComprehension => "Comprensión de Texto",
-            GameType::INumbs => "iNumbs (Números / Rellenar casilleros)",
-        }
-    }
-    
-    fn description(&self) -> &str {
-        match self {
-            GameType::ReadingSpeed => "Lee el texto en el tiempo configurado y después escríbelo",
-            GameType::WordMemory => "Memoriza las palabras que aparecen y después escríbelas",
-            GameType::TextComprehension => "Lee el texto y responde las preguntas",
-            GameType::INumbs => "Memoriza secuencias numéricas, opcionalmente completa casilleros",
-        }
-    }
-}
+use controllers::AppController;
+use views::{render_menu, render_results, render_history};
 
 pub struct SuperlecturaApp {
-    state: AppState,
-    storage: GameStorage,
-    current_game: Option<Box<dyn Game>>,
-    current_result: Option<GameResult>,
-    game_configs: HashMap<GameType, GameConfig>,
+    controller: AppController,
 }
 
 impl Default for SuperlecturaApp {
     fn default() -> Self {
-        let mut configs = HashMap::new();
-        configs.insert(GameType::ReadingSpeed, GameConfig::default());
-        configs.insert(GameType::WordMemory, GameConfig::default());
-    configs.insert(GameType::TextComprehension, GameConfig::default());
-    configs.insert(GameType::INumbs, GameConfig::default());
-        
         Self {
-            state: AppState::GameSelection,
-            storage: GameStorage::new(),
-            current_game: None,
-            current_result: None,
-            game_configs: configs,
+            controller: AppController::new(),
         }
     }
 }
@@ -75,29 +29,28 @@ impl Default for SuperlecturaApp {
 impl eframe::App for SuperlecturaApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            match &self.state {
+            match self.controller.get_state().clone() {
                 AppState::GameSelection => {
-                    self.show_game_selection(ui);
+                    render_menu(ui, &mut self.controller);
                 }
-                AppState::GameConfig(game_type) => {
-                    self.show_game_config(ui, game_type.clone());
+                AppState::GameConfig(_game_type) => {
+                    // Por ahora, ir directamente a jugar
+                    render_menu(ui, &mut self.controller);
                 }
-                AppState::Playing(game_type) => {
-                    self.show_game_play(ui, game_type.clone(), ctx);
+                AppState::Playing(_game_type) => {
+                    self.controller.update_current_game(ui, ctx);
                 }
                 AppState::Results => {
-                    self.show_results(ui);
+                    render_results(ui, &mut self.controller);
                 }
                 AppState::History => {
-                    self.show_history(ui);
+                    render_history(ui, &mut self.controller);
                 }
             }
         });
         
-        if let Some(game) = &self.current_game {
-            if game.needs_repaint() {
-                ctx.request_repaint();
-            }
+        if self.controller.needs_repaint() {
+            ctx.request_repaint();
         }
     }
 }

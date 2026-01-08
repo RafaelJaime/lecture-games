@@ -33,7 +33,10 @@ pub fn render_menu(ui: &mut egui::Ui, controller: &mut AppController) {
 fn render_game_card(ui: &mut egui::Ui, controller: &mut AppController, game_type: &GameType) {
     let stats = controller.get_stats_for_game(game_type);
     
-    ui.group(|ui| {
+    let frame = egui::Frame::group(ui.style())
+        .inner_margin(egui::Margin::same(12.0));
+    
+    let response = frame.show(ui, |ui| {
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
                 ui.heading(game_type.name());
@@ -48,10 +51,27 @@ fn render_game_card(ui: &mut egui::Ui, controller: &mut AppController, game_type
             });
             
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui.button("Jugar").clicked() {
-                    controller.start_game(game_type.clone());
-                }
+                ui.label("▶");
             });
         });
     });
+    
+    let response = ui.interact(
+        response.response.rect,
+        ui.id().with(game_type.name()),
+        egui::Sense::click(),
+    );
+    
+    if response.hovered() {
+        ui.painter().rect_filled(
+            response.rect,
+            6.0,
+            egui::Color32::from_rgba_unmultiplied(100, 100, 100, 40),
+        );
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    
+    if response.clicked() {
+        controller.start_game(game_type.clone());
+    }
 }

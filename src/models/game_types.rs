@@ -60,17 +60,12 @@ pub enum GameState {
 }
 
 /// Niveles de dificultad
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub enum Difficulty {
     Easy,
+    #[default]
     Medium,
     Hard,
-}
-
-impl Default for Difficulty {
-    fn default() -> Self {
-        Difficulty::Medium
-    }
 }
 
 impl Difficulty {

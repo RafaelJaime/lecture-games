@@ -89,7 +89,7 @@ impl AppController {
     }
     
     pub fn needs_repaint(&self) -> bool {
-        self.current_game.as_ref().map_or(false, |g| g.needs_repaint())
+        self.current_game.as_ref().is_some_and(|g| g.needs_repaint())
     }
     
     // === Resultados ===

@@ -14,16 +14,9 @@ pub use games::Game;
 use controllers::AppController;
 use views::{render_menu, render_results, render_history};
 
+#[derive(Default)]
 pub struct SuperlecturaApp {
     controller: AppController,
-}
-
-impl Default for SuperlecturaApp {
-    fn default() -> Self {
-        Self {
-            controller: AppController::new(),
-        }
-    }
 }
 
 impl eframe::App for SuperlecturaApp {

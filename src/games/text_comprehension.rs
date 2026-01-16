@@ -46,7 +46,7 @@ impl TextComprehensionGame {
     }
 
     fn generate_content(config: &GameConfig) -> (String, Vec<Question>) {
-        let content = match config.difficulty {
+        match config.difficulty {
             Difficulty::Easy => (
                 "El sol es una estrella muy importante para la vida en la Tierra. Nos da luz y calor todos los días. Sin el sol, no podríamos vivir. Las plantas necesitan la luz del sol para crecer y producir oxígeno que respiramos.".to_string(),
                 vec![
@@ -68,8 +68,8 @@ impl TextComprehensionGame {
                     Question {
                         question: "¿Qué permite la inteligencia artificial?".to_string(),
                         options: vec![
-                            "Solo calcular números".to_string(), 
-                            "Realizar tareas que requieren inteligencia humana".to_string(), 
+                            "Solo calcular números".to_string(),
+                            "Realizar tareas que requieren inteligencia humana".to_string(),
                             "Reemplazar completamente a los humanos".to_string()
                         ],
                         correct_answer: 1,
@@ -77,8 +77,8 @@ impl TextComprehensionGame {
                     Question {
                         question: "¿Cómo mejoran los sistemas de aprendizaje automático?".to_string(),
                         options: vec![
-                            "A través de la experiencia".to_string(), 
-                            "Solo con programación explícita".to_string(), 
+                            "A través de la experiencia".to_string(),
+                            "Solo con programación explícita".to_string(),
                             "No pueden mejorar".to_string()
                         ],
                         correct_answer: 0,
@@ -108,8 +108,7 @@ impl TextComprehensionGame {
                     }
                 ]
             ),
-        };
-        content
+        }
     }
 
     fn calculate_score(&self) -> f32 {
@@ -230,20 +229,16 @@ impl Game for TextComprehensionGame {
                     ui.add_space(20.0);
                     
                     ui.horizontal(|ui| {
-                        if self.current_question > 0 {
-                            if ui.button("Anterior").clicked() {
-                                self.current_question -= 1;
-                            }
+                        if self.current_question > 0 && ui.button("Anterior").clicked() {
+                            self.current_question -= 1;
                         }
-                        
+
                         if self.current_question < self.questions.len() - 1 {
                             if ui.button("Siguiente").clicked() {
                                 self.current_question += 1;
                             }
-                        } else {
-                            if button_with_enter(ui, "Terminar") {
-                                self.finished = true;
-                            }
+                        } else if button_with_enter(ui, "Terminar") {
+                            self.finished = true;
                         }
                     });
                 }

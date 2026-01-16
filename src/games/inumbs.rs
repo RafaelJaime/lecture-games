@@ -178,8 +178,8 @@ impl Game for INumbsGame {
                         ui.add_space(10.0);
 
                         // Show all numbers at once, with small separation. Use columns to wrap.
-                        let cols = (self.total_count.min(12)).max(1); // up to 12 per row
-                        for row in 0..((self.total_count + cols - 1) / cols) {
+                        let cols = self.total_count.clamp(1, 12); // up to 12 per row
+                        for row in 0..self.total_count.div_ceil(cols) {
                             ui.horizontal(|ui| {
                                 for col in 0..cols {
                                     let idx = row * cols + col;
@@ -209,8 +209,8 @@ impl Game for INumbsGame {
                 ui.add_space(10.0);
 
                 // display inputs in a grid
-                let cols = 6usize.max(1);
-                for row in 0..((self.total_count + cols - 1) / cols) {
+                let cols = 6usize;
+                for row in 0..self.total_count.div_ceil(cols) {
                     ui.horizontal(|ui| {
                         for col in 0..cols {
                             let idx = row * cols + col;

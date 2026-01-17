@@ -19,7 +19,7 @@ pub fn button_with_enter(ui: &mut egui::Ui, text: &str) -> bool {
 pub fn menu_button(ui: &mut egui::Ui) -> bool {
     let mut clicked = false;
     ui.horizontal(|ui| {
-        if ui.button("← Menú").clicked() {
+        if ui.button("< Menú").clicked() {
             clicked = true;
         }
     });

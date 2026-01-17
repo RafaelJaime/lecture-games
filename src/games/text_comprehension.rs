@@ -140,7 +140,7 @@ impl Game for TextComprehensionGame {
         match self.state {
             ComprehensionState::Instructions => {
                 ui.horizontal(|ui| {
-                    if ui.button("← Menú").clicked() {
+                    if ui.button("< Menú").clicked() {
                         self.should_go_to_menu = true;
                     }
                 });
@@ -175,7 +175,7 @@ impl Game for TextComprehensionGame {
             
             ComprehensionState::Reading => {
                 ui.horizontal(|ui| {
-                    if ui.button("← Menú").clicked() {
+                    if ui.button("< Menú").clicked() {
                         self.should_go_to_menu = true;
                     }
                 });
@@ -199,7 +199,7 @@ impl Game for TextComprehensionGame {
             
             ComprehensionState::Questions => {
                 ui.horizontal(|ui| {
-                    if ui.button("← Menú").clicked() {
+                    if ui.button("< Menú").clicked() {
                         self.should_go_to_menu = true;
                     }
                 });

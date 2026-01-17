@@ -11,7 +11,7 @@ pub fn render_history(ui: &mut egui::Ui, controller: &mut AppController) {
     ui.separator();
     ui.add_space(10.0);
     
-    if ui.button("← Volver al Menú").clicked() {
+    if ui.button("< Volver al Menú").clicked() {
         controller.set_state(AppState::GameSelection);
         return;
     }

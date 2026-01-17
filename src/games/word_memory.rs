@@ -113,7 +113,7 @@ impl Game for WordMemoryGame {
         match self.state {
             MemoryState::Instructions => {
                 ui.horizontal(|ui| {
-                    if ui.button("← Menú").clicked() {
+                    if ui.button("< Menú").clicked() {
                         self.should_go_to_menu = true;
                     }
                 });
@@ -181,7 +181,7 @@ impl Game for WordMemoryGame {
             
             MemoryState::Recall => {
                 ui.horizontal(|ui| {
-                    if ui.button("← Menú").clicked() {
+                    if ui.button("< Menú").clicked() {
                         self.should_go_to_menu = true;
                     }
                 });

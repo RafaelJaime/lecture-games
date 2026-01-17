@@ -201,7 +201,7 @@ impl ReadingSpeedGame {
 
     fn draw_menu_button(&mut self, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
-            if ui.button("← Menú").clicked() {
+            if ui.button("< Menú").clicked() {
                 self.should_go_to_menu = true;
                 self.state = NumberState::Instructions;
             }

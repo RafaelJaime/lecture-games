@@ -27,6 +27,7 @@ pub struct MatricesGame {
     // Timing
     start_time: Option<Instant>,
     matrix_start_time: Option<Instant>,
+    is_blank_phase: bool, // Fase de tiempo en blanco entre matrices
 
     // Intentos
     current_attempt: usize,
@@ -153,6 +154,7 @@ impl MatricesGame {
             user_matrices,
             start_time: None,
             matrix_start_time: None,
+            is_blank_phase: false,
             current_attempt: 1,
             best_score: 0,
             finished: false,
@@ -174,6 +176,7 @@ impl MatricesGame {
         self.current_matrix_index = 0;
         self.start_time = Some(Instant::now());
         self.matrix_start_time = Some(Instant::now());
+        self.is_blank_phase = false;
         self.state = MatricesState::ShowingMatrices;
     }
 
@@ -187,11 +190,13 @@ impl MatricesGame {
         ui.add_space(10.0);
     }
 
-    fn get_progressive_time(&self, index: usize) -> std::time::Duration {
-        // Velocidad progresiva: empieza lento y acelera
-        let base_secs = 3.0f32;
-        let factor = 1.0 - (index as f32 * 0.1).min(0.5); // Reduce hasta 50%
-        std::time::Duration::from_secs_f32(base_secs * factor)
+    fn get_show_time(&self, _index: usize) -> std::time::Duration {
+        // Usar el showtime configurado
+        std::time::Duration::from_millis(self.config.matrix_showtime_ms)
+    }
+
+    fn get_blank_time(&self) -> std::time::Duration {
+        std::time::Duration::from_millis(self.config.matrix_blank_time_ms)
     }
 }
 
@@ -224,6 +229,10 @@ impl Game for MatricesGame {
                     ui.label(format!("Modo: {}", self.config.mode.name()));
                     ui.label(format!("Matrices: {}", self.config.matrix_count));
                     ui.label(format!("Tamano: {}x{}", self.config.matrix_size.0, self.config.matrix_size.1));
+                    ui.label(format!("Tiempo de visualizacion: {}ms", self.config.matrix_showtime_ms));
+                    if self.config.matrix_blank_time_ms > 0 {
+                        ui.label(format!("Tiempo en blanco: {}ms", self.config.matrix_blank_time_ms));
+                    }
                     ui.label(format!("Intentos: {}", self.config.max_attempts));
                 });
 
@@ -256,7 +265,10 @@ impl Game for MatricesGame {
                         self.config.matrix_size.1
                     ));
                     ui.add_space(10.0);
-                    ui.label("La velocidad aumentara progresivamente");
+                    ui.label(format!("Tiempo por matriz: {}ms", self.config.matrix_showtime_ms));
+                    if self.config.matrix_blank_time_ms > 0 {
+                        ui.label(format!("Tiempo en blanco: {}ms", self.config.matrix_blank_time_ms));
+                    }
                     ui.add_space(30.0);
 
                     if ui.button("Iniciar visualizacion").clicked() {
@@ -267,45 +279,112 @@ impl Game for MatricesGame {
 
             MatricesState::ShowingMatrices => {
                 if let Some(matrix_start) = self.matrix_start_time {
-                    let display_time = self.get_progressive_time(self.current_matrix_index);
                     let elapsed = matrix_start.elapsed();
 
-                    if elapsed >= display_time {
-                        // Pasar a la siguiente matriz
-                        self.current_matrix_index += 1;
-                        if self.current_matrix_index >= self.matrices.len() {
-                            self.state = MatricesState::InputMatrices;
-                            self.current_matrix_index = 0;
+                    if self.is_blank_phase {
+                        // Fase de tiempo en blanco
+                        let blank_time = self.get_blank_time();
+
+                        if elapsed >= blank_time {
+                            // Terminar fase de blank, mostrar siguiente matriz
+                            self.is_blank_phase = false;
+                            self.matrix_start_time = Some(Instant::now());
                             return;
                         }
-                        self.matrix_start_time = Some(Instant::now());
-                        return;
-                    }
 
-                    let remaining = display_time - elapsed;
+                        // Mostrar pantalla en blanco
+                        ui.vertical_centered(|ui| {
+                            ui.add_space(80.0);
+                            ui.label(format!(
+                                "Matriz {} de {}",
+                                self.current_matrix_index + 1,
+                                self.matrices.len()
+                            ));
+                            ui.add_space(50.0);
+                            ui.label("Preparate...");
+                        });
+                    } else {
+                        // Fase de mostrar matriz
+                        let display_time = self.get_show_time(self.current_matrix_index);
 
-                    ui.vertical_centered(|ui| {
-                        ui.add_space(20.0);
-                        ui.label(format!(
-                            "Matriz {} de {}",
-                            self.current_matrix_index + 1,
-                            self.matrices.len()
-                        ));
-                        ui.label(format!("Tiempo: {:.1}s", remaining.as_secs_f32()));
-                        ui.add_space(20.0);
+                        if elapsed >= display_time {
+                            // Avanzar a siguiente matriz o fase blank
+                            self.current_matrix_index += 1;
+                            if self.current_matrix_index >= self.matrices.len() {
+                                self.state = MatricesState::InputMatrices;
+                                self.current_matrix_index = 0;
+                                return;
+                            }
 
-                        if let Some(matrix) = self.matrices.get(self.current_matrix_index) {
-                            matrix.render(ui, 40.0, false);
+                            // Si hay blank time, entrar en fase blank
+                            if self.config.matrix_blank_time_ms > 0 {
+                                self.is_blank_phase = true;
+                                self.matrix_start_time = Some(Instant::now());
+                            } else {
+                                self.matrix_start_time = Some(Instant::now());
+                            }
+                            return;
                         }
 
-                        ui.add_space(20.0);
-                        ui.label("Memoriza el patron");
-                    });
+                        let remaining = display_time - elapsed;
+
+                        ui.vertical_centered(|ui| {
+                            ui.add_space(20.0);
+                            ui.label(format!(
+                                "Matriz {} de {}",
+                                self.current_matrix_index + 1,
+                                self.matrices.len()
+                            ));
+                            ui.label(format!("Tiempo: {:.1}s", remaining.as_secs_f32()));
+                            ui.add_space(20.0);
+
+                            if let Some(matrix) = self.matrices.get(self.current_matrix_index) {
+                                matrix.render(ui, 40.0, false);
+                            }
+
+                            ui.add_space(20.0);
+                            ui.label("Memoriza el patron");
+                        });
+                    }
                 }
             }
 
             MatricesState::InputMatrices => {
                 self.draw_menu_button(ui);
+
+                // Navegación por teclado
+                let left_pressed = ui.input(|i| i.key_pressed(egui::Key::ArrowLeft));
+                let right_pressed = ui.input(|i| i.key_pressed(egui::Key::ArrowRight));
+                let number_pressed: Option<usize> = ui.input(|i| {
+                    for key_idx in 0..9 {
+                        let key = match key_idx {
+                            0 => egui::Key::Num1,
+                            1 => egui::Key::Num2,
+                            2 => egui::Key::Num3,
+                            3 => egui::Key::Num4,
+                            4 => egui::Key::Num5,
+                            5 => egui::Key::Num6,
+                            6 => egui::Key::Num7,
+                            7 => egui::Key::Num8,
+                            8 => egui::Key::Num9,
+                            _ => continue,
+                        };
+                        if i.key_pressed(key) && key_idx < self.matrices.len() {
+                            return Some(key_idx);
+                        }
+                    }
+                    None
+                });
+
+                if left_pressed && self.current_matrix_index > 0 {
+                    self.current_matrix_index -= 1;
+                }
+                if right_pressed && self.current_matrix_index < self.matrices.len() - 1 {
+                    self.current_matrix_index += 1;
+                }
+                if let Some(idx) = number_pressed {
+                    self.current_matrix_index = idx;
+                }
 
                 ui.horizontal(|ui| {
                     ui.heading(format!(
@@ -317,6 +396,7 @@ impl Game for MatricesGame {
 
                 ui.add_space(10.0);
                 ui.label("Haz clic en las casillas para marcarlas como azules");
+                ui.label("Usa las flechas izquierda/derecha o numeros 1-9 para navegar");
                 ui.add_space(20.0);
 
                 // Renderizar matriz interactiva

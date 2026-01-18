@@ -23,142 +23,244 @@ cargo build
 cargo build --release
 ```
 
-# README – Software de Pruebas de Memoria
+# Software de Pruebas de Memoria
 
-Este software implementa **6 pruebas oficiales de memoria**, orientadas a competición, con reglas estrictas de tiempo, puntuación y número de intentos. A continuación se describen de forma resumida para su desarrollo e implementación.
-
----
-
-## 1. Matrices
-
-**Descripción**
-Memorización visual de matrices formadas por casillas blancas y azules.
-
-**Reglas**
-
-* 12 matrices por intento.
-* Duración total: 6 minutos.
-* Todas las matrices tienen el mismo número de casillas (elegido por el competidor).
-* La velocidad de paso es automática y aumenta progresivamente.
-* No se permite ningún tipo de anotación.
-* Al finalizar, el usuario debe dibujar todas las matrices en la plantilla del software.
-
-**Puntuación**
-
-* 10 puntos por casilla correctamente memorizada.
-* La puntuación depende del número de matrices correctas y del tamaño de cada matriz.
-* 2 intentos totales, solo cuenta la mejor marca.
+Este documento define el **alcance funcional completo** del software de entrenamiento, simulación y competición de pruebas de memoria, incluyendo **las 6 pruebas oficiales** y el **funcionamiento del simulador**.
 
 ---
 
-## 2. Binarios (1 y 4 segundos)
+## 1. Pantalla de Inicio
 
-**Descripción**
-Memorización de secuencias de números binarios (0 y 1).
+Desde la pantalla inicial el usuario puede seleccionar el modo de uso:
 
-**Reglas**
+### Modos disponibles
 
-* Tiempo de exposición: 1 segundo o 4 segundos.
-* Tras desaparecer la secuencia, el usuario debe introducirla en orden correcto.
-* Se permite anotación en papel antes de escribir la respuesta.
-* 10 intentos totales.
+* **Training**
+  Entrenamiento libre e individual de todas las pruebas, con total control de parámetros.
 
-**Puntuación**
+* **Test**
+  Modo de test completo.
+  El programa ejecuta automáticamente las **6 pruebas oficiales**, contabilizando marcas e intentos.
+  Se pasa de una prueba a otra sin intervención del usuario hasta finalizar el test.
+  En cualquier momento puede activarse la tecla **“Training”**.
 
-* Solo puntúa la mejor marca obtenida.
+* **Groups & Schools**
+  Modo de competición para colegios y grupos.
+  Pensado para situaciones con **un solo ordenador**, proyectando la misma información a todos los participantes simultáneamente.
 
----
+* **Exhibition**
+  Pruebas de memoria rápida no incluidas en la competición oficial.
 
-## 3. Figuras de Colores
+### Speed Test y datos del competidor
 
-**Descripción**
-Memorización de una secuencia de figuras geométricas con color.
+En los modos **Competition** y **Exhibition**:
 
-**Reglas**
+* El sistema ejecuta un **Speed Test** para comprobar que el ordenador cumple los requisitos mínimos.
+* A continuación se muestran campos opcionales:
 
-* 15 figuras por intento.
-* Duración total: 3 minutos.
-* Velocidad inicial elegida por el competidor; luego aumenta automáticamente.
-* Con velocidad lenta (1,75 s) puntúa cualquier número de aciertos.
-* Con velocidades más rápidas es obligatorio memorizar al menos 10 figuras para puntuar.
-* Se permite anotación en papel.
-* Al finalizar, las figuras se marcan en una plantilla del software.
-
-**Figuras posibles**
-
-* Círculo, cuadrado, rectángulo, triángulo, pentágono, hexágono, heptágono, estrella.
-
-**Colores posibles**
-
-* Blanco, negro, marrón, rojo, verde, amarillo, naranja, azul, gris, violeta.
-
-**Puntuación**
-
-* Depende de la velocidad inicial y del número de figuras correctas.
-* 3 intentos totales, solo cuenta la mejor marca.
+  * Número de asiento
+  * Título del competidor
+  * Nombre
+  * Clave de seguridad (introducida por un juez)
+* Todos los campos pueden dejarse en blanco.
 
 ---
 
-## 4. Decimales (1 y 4 segundos)
+## 2. Funcionamiento del Simulador (Training)
 
-**Descripción**
-Memorización de secuencias de dígitos decimales (0–9).
+El modo **Training** es el núcleo de práctica y configuración avanzada.
 
-**Reglas**
+### Entrenamiento con dígitos
 
-* Tiempo de exposición: 1 segundo o 4 segundos.
-* Tras desaparecer la secuencia, el usuario debe escribirla correctamente.
-* Se permite anotación previa en papel.
-* 10 intentos totales.
+* Selección de:
 
-**Puntuación**
+  * Número de dígitos
+  * Tipo: **decimales o binarios**
+  * Tiempo de exposición (**seconds**)
+* Tiempos oficiales de competición: **1 y 4 segundos**
+* Posibilidad de **guardar y cargar configuraciones**
+* Botones:
 
-* Solo puntúa la mejor marca obtenida.
+  * **GO**: iniciar prueba
+  * **Check**: comprobar resultados
 
----
+### Opciones
 
-## 5. Sistema de Medio Dígito (Decimales y Binarios)
+* **Fast mode**
 
-**Descripción**
-Sistema de puntuación parcial para intentos fallidos por un solo dígito.
+  * Desactivado: aparecen celdas en blanco para introducir resultados
+  * El sistema corrige automáticamente y marca errores en rojo
 
-**Reglas**
+* **Calculator**
 
-* En la prueba de 1 segundo: a partir de 14 dígitos.
-* En la prueba de 4 segundos: a partir de 20 dígitos.
-* Si el competidor:
-
-  1. Consigue una marca base (ej. 14 dígitos),
-  2. Y luego falla un intento superior por un solo dígito,
-* Se le añade **+0,5 dígitos** a la puntuación final.
-* No se conceden dígitos completos no logrados sin error.
-
-**Ejemplo**
-
-* 14 correctos → intento de 15 fallado por 1 → puntuación final: **14,5**.
+  * Calculadora de puntuaciones
+  * Indica si una marca alcanzaría algún **título de maestría** en competición
 
 ---
 
-## 6. Prueba de Exhibición (0,5 segundos)
+## 3. Configuración Avanzada (Dígitos)
 
-**Descripción**
-Variante rápida para exhibiciones.
+La sección **Configuration** incluye las siguientes pestañas:
 
-**Reglas**
+### General
 
-* Cada fallo por un solo dígito en un intento superior incrementa la puntuación en **0,1 segundos**.
-* No afecta a las pruebas oficiales, solo a exhibición.
+* Número de columnas
+* Separación entre filas y columnas
+* Distancia entre grupos (jump columns)
+
+### Empty cells
+
+* Oculta dígitos concretos por posición
+* Admite listas y rangos
+  Ejemplo: `3,5-8` → se ocultan las posiciones 3, 5, 6, 7 y 8
+
+### Empty columns
+
+* Oculta columnas completas según su índice
+
+### Sentinel
+
+* Tras usar “Check”, aparece una flecha que indica dónde comienzan los números en el siguiente intento
+
+### Auto
+
+* Agrupaciones numéricas preestablecidas
+
+### Margin
+
+* Posición de los dígitos en pantalla
+
+### Font
+
+* Tipo de fuente, tamaño y color
+
+### Binary
+
+* Asignación de letras a códigos binarios de 2, 3 o 4 bits
+* Optimiza la introducción de resultados
+* Configuración guardable
+
+### Move
+
+* Reorganización manual de dígitos mediante arrastre
+* Selección múltiple con el ratón
+* Opciones:
+
+  * **Unselect all**
+  * **Remove manual** (restablece posiciones originales)
 
 ---
 
-## Consideraciones Generales de Desarrollo
+## 4. Figuras de Colores
 
-* Control automático y progresivo de tiempos.
-* Gestión de intentos y almacenamiento de la mejor marca.
-* Plantillas gráficas para reproducción (matrices y figuras).
-* Validación estricta de errores (especialmente para medio dígito).
-* Registro claro de puntuación final por prueba.
+### Parámetros
+
+* **Number**: número de figuras (competición: 15)
+* **Seconds**: tiempo de exposición por figura
+* **Blank time**: tiempo en blanco entre figuras (competición: 0,2 s)
+* **Constant time**:
+
+  * Activado: velocidad constante
+  * Desactivado: velocidad progresiva (modo competición)
+
+### Consideraciones
+
+* Con tiempos ≤ 1,4 s es obligatorio memorizar **mínimo 10 figuras** para puntuar
+* Se recomienda comenzar con **1,75 s**
+* Icono visual con tabla orientativa de puntuaciones
+* Todas las puntuaciones pueden consultarse en la calculadora
 
 ---
 
-Este README define las reglas funcionales mínimas necesarias para implementar el software de entrenamiento y competición de memoria.
+## 5. Matrices
+
+### Parámetros
+
+* **Columns / Rows**: tamaño de la matriz
+* **Size**: tamaño visual
+* **Number**: número de matrices (competición: 12)
+* **Showtime**: tiempo visible (competición: 5 s)
+* **Blank time**: pausa entre matrices (competición: 1 s)
+* **Constant time**:
+
+  * Activado: tiempo fijo
+  * Desactivado: velocidad creciente
+
+### Introducción de resultados
+
+* Al finalizar, se abre la **plantilla de matrices**
+* Las celdas se pintan en azul mediante clic
+* Navegación:
+
+  * Ratón
+  * Flechas del teclado
+
+### Configuración específica
+
+* Asignación de letras a códigos de 2, 3 o 4 casillas
+* Flecha de dirección:
+
+  * Derecha: orden normal
+  * Izquierda: comienza por la última matriz
+* **Tabulador**: salta matrices no recordadas
+* Punto rojo: matriz pendiente de respuesta
+
+---
+
+## 6. Pruebas Oficiales de Competición
+
+### 6.1 Matrices
+
+* 12 matrices
+* 6 minutos
+* Sin anotaciones
+* 10 puntos por casilla
+* 2 intentos, solo cuenta el mejor
+
+### 6.2 Binarios (1 / 4 segundos)
+
+* Secuencias de 0 y 1
+* Anotación permitida
+* 10 intentos
+* Puntúa la mejor marca
+
+### 6.3 Figuras de Colores
+
+* 15 figuras
+* Velocidad progresiva
+* 3 intentos
+* Puntúa la mejor marca
+
+### 6.4 Decimales (1 / 4 segundos)
+
+* Dígitos del 0 al 9
+* Anotación permitida
+* 10 intentos
+* Puntúa la mejor marca
+
+### 6.5 Sistema de Medio Dígito
+
+* 1 segundo: desde 14 dígitos
+* 4 segundos: desde 20 dígitos
+* Fallo por un solo dígito en intento superior → +0,5
+* Nunca se concede un dígito completo no logrado sin error
+
+### 6.6 Exhibición (0,5 segundos)
+
+* Incremento de +0,1 s por fallo de un solo dígito en intento superior
+* No oficial
+
+---
+
+## 7. Consideraciones Generales de Desarrollo
+
+* Control preciso de tiempos y progresión automática
+* Gestión de intentos y selección de mejor marca
+* Interfaces gráficas claras y rápidas
+* Validación estricta de errores
+* Configuración avanzada persistente
+* Uso competitivo, educativo y de exhibición
+
+---
+
+Este README define **todas las reglas, flujos y configuraciones necesarias** para desarrollar un software completo de simulación y competición de memoria.

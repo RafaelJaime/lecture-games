@@ -48,7 +48,12 @@ impl AppController {
 
     pub fn set_mode(&mut self, mode: GameMode) {
         self.current_mode = mode;
-        self.state = AppState::GameSelection(mode);
+        // Los modos Test, GroupsSchools y Exhibition requieren SpeedTest primero
+        if mode.requires_competitor_data() {
+            self.state = AppState::SpeedTest(mode);
+        } else {
+            self.state = AppState::GameSelection(mode);
+        }
     }
 
     pub fn go_to_mode_selection(&mut self) {
@@ -58,21 +63,20 @@ impl AppController {
     // === Juegos ===
 
     pub fn start_game(&mut self, game_type: GameType) {
-        let config = if self.current_mode == GameMode::Competition {
+        let config = if self.current_mode == GameMode::Test || self.current_mode == GameMode::GroupsSchools {
             GameConfig::for_competition(&game_type)
+        } else if self.current_mode == GameMode::Exhibition {
+            GameConfig::for_exhibition()
         } else {
             self.game_configs.get(&game_type).cloned().unwrap_or_default()
         };
 
         let game: Box<dyn Game> = match game_type {
-            GameType::Decimales => {
+            GameType::Decimales1s | GameType::Decimales4s => {
                 Box::new(crate::games::decimales::DecimalesGame::new(config))
             }
-            GameType::Binarios => {
+            GameType::Binarios1s | GameType::Binarios4s => {
                 Box::new(crate::games::binarios::BinariosGame::new(config))
-            }
-            GameType::Exhibicion => {
-                Box::new(crate::games::exhibicion::ExhibicionGame::new(config))
             }
             GameType::Matrices => {
                 Box::new(crate::games::matrices::MatricesGame::new(config))
@@ -91,14 +95,11 @@ impl AppController {
         self.game_configs.insert(game_type, config.clone());
 
         let game: Box<dyn Game> = match game_type {
-            GameType::Decimales => {
+            GameType::Decimales1s | GameType::Decimales4s => {
                 Box::new(crate::games::decimales::DecimalesGame::new(config))
             }
-            GameType::Binarios => {
+            GameType::Binarios1s | GameType::Binarios4s => {
                 Box::new(crate::games::binarios::BinariosGame::new(config))
-            }
-            GameType::Exhibicion => {
-                Box::new(crate::games::exhibicion::ExhibicionGame::new(config))
             }
             GameType::Matrices => {
                 Box::new(crate::games::matrices::MatricesGame::new(config))

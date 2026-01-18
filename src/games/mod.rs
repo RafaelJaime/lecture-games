@@ -2,7 +2,6 @@
 
 pub mod decimales;
 pub mod binarios;
-pub mod exhibicion;
 pub mod matrices;
 pub mod figuras_colores;
 

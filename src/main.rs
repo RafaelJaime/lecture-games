@@ -12,11 +12,25 @@ pub use models::*;
 pub use games::Game;
 
 use controllers::AppController;
-use views::{render_mode_selection, render_menu, render_game_config, render_results, render_history};
+use views::{
+    render_mode_selection, render_menu, render_game_config, render_results, render_history,
+    render_speed_test, render_competitor_info, SpeedTestState, CompetitorInfoState,
+};
 
-#[derive(Default)]
 pub struct SuperlecturaApp {
     controller: AppController,
+    speed_test_state: SpeedTestState,
+    competitor_info_state: CompetitorInfoState,
+}
+
+impl Default for SuperlecturaApp {
+    fn default() -> Self {
+        Self {
+            controller: AppController::default(),
+            speed_test_state: SpeedTestState::default(),
+            competitor_info_state: CompetitorInfoState::default(),
+        }
+    }
 }
 
 impl eframe::App for SuperlecturaApp {
@@ -25,6 +39,12 @@ impl eframe::App for SuperlecturaApp {
             match self.controller.get_state().clone() {
                 AppState::ModeSelection => {
                     render_mode_selection(ui, &mut self.controller);
+                }
+                AppState::SpeedTest(mode) => {
+                    render_speed_test(ui, &mut self.controller, mode, &mut self.speed_test_state);
+                }
+                AppState::CompetitorInfo(mode) => {
+                    render_competitor_info(ui, &mut self.controller, mode, &mut self.competitor_info_state);
                 }
                 AppState::GameSelection(mode) => {
                     render_menu(ui, &mut self.controller, mode);
@@ -37,6 +57,14 @@ impl eframe::App for SuperlecturaApp {
                 }
                 AppState::Results => {
                     render_results(ui, &mut self.controller);
+                }
+                AppState::TestResults => {
+                    // TODO: Implementar pantalla de resultados del Test completo
+                    ui.heading("Resultados del Test");
+                    ui.label("Proxima implementacion");
+                    if ui.button("Volver al menu").clicked() {
+                        self.controller.set_state(AppState::ModeSelection);
+                    }
                 }
                 AppState::History => {
                     render_history(ui, &mut self.controller);

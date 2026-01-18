@@ -20,35 +20,62 @@ pub fn render_mode_selection(ui: &mut egui::Ui, controller: &mut AppController) 
         ui.add_space(20.0);
     });
 
+    // 4 modos en grid 2x2
     ui.columns(2, |columns| {
-        // Columna 1: Competición
+        // Columna 1
         columns[0].vertical_centered(|ui| {
             render_mode_card(
                 ui,
                 controller,
-                GameMode::Competition,
-                "Competicion",
+                GameMode::Training,
+                "Training",
                 &[
-                    "Reglas oficiales de competicion",
-                    "Intentos limitados por prueba",
-                    "Solo cuenta la mejor marca",
-                    "Sistema de medio digito",
+                    "Control total de parametros",
+                    "Sin limite de intentos",
+                    "Practica libre",
+                    "Fast mode disponible",
+                ],
+            );
+            ui.add_space(20.0);
+            render_mode_card(
+                ui,
+                controller,
+                GameMode::GroupsSchools,
+                "Groups & Schools",
+                &[
+                    "Modo para grupos",
+                    "Proyeccion compartida",
+                    "Reglas oficiales",
+                    "Speed Test incluido",
                 ],
             );
         });
 
-        // Columna 2: Entrenamiento
+        // Columna 2
         columns[1].vertical_centered(|ui| {
             render_mode_card(
                 ui,
                 controller,
-                GameMode::Training,
-                "Entrenamiento",
+                GameMode::Test,
+                "Test",
                 &[
-                    "Configuracion personalizada",
-                    "Sin limite de intentos",
-                    "Practica libre",
-                    "Ajusta tiempo y dificultad",
+                    "6 pruebas oficiales",
+                    "Ejecucion automatica",
+                    "Intentos limitados",
+                    "Sistema medio digito",
+                ],
+            );
+            ui.add_space(20.0);
+            render_mode_card(
+                ui,
+                controller,
+                GameMode::Exhibition,
+                "Exhibition",
+                &[
+                    "Pruebas rapidas (0.5s)",
+                    "No oficial",
+                    "Demostraciones",
+                    "Bonus por decimas",
                 ],
             );
         });

@@ -14,6 +14,7 @@ use std::time::Instant;
 
 pub struct BinariosGame {
     config: GameConfig,
+    game_type: GameType,
     state: BinariosState,
 
     // Secuencia actual
@@ -51,9 +52,15 @@ enum BinariosState {
 impl BinariosGame {
     pub fn new(config: GameConfig) -> Self {
         let initial_length = config.element_count;
+        // Determinar el game_type basado en el tiempo de exposición
+        let game_type = match config.exposure_time {
+            ExposureTime::FourSeconds => GameType::Binarios4s,
+            _ => GameType::Binarios1s,
+        };
 
         Self {
             config,
+            game_type,
             state: BinariosState::Instructions,
             current_sequence: String::new(),
             sequence_length: initial_length,
@@ -163,6 +170,56 @@ impl BinariosGame {
         ui.separator();
         ui.add_space(10.0);
     }
+
+    fn render_sequence_display(&self, ui: &mut egui::Ui) {
+        let cols = self.config.digit_columns;
+        let chars: Vec<char> = self.current_sequence.chars().collect();
+
+        // Si la secuencia es corta, mostrarla en una sola línea
+        if chars.len() <= cols {
+            ui.horizontal(|ui| {
+                for c in &chars {
+                    let color = if *c == '1' {
+                        egui::Color32::from_rgb(50, 150, 50) // Verde para 1
+                    } else {
+                        egui::Color32::from_rgb(200, 50, 50) // Rojo para 0
+                    };
+                    ui.label(
+                        RichText::new(c.to_string())
+                            .size(42.0)
+                            .color(color)
+                            .strong()
+                            .monospace()
+                    );
+                }
+            });
+        } else {
+            // Dividir en filas según las columnas configuradas
+            ui.vertical(|ui| {
+                ui.spacing_mut().item_spacing.y = self.config.row_spacing;
+
+                for chunk in chars.chunks(cols) {
+                    ui.horizontal(|ui| {
+                        ui.spacing_mut().item_spacing.x = self.config.col_spacing;
+                        for c in chunk {
+                            let color = if *c == '1' {
+                                egui::Color32::from_rgb(50, 150, 50) // Verde para 1
+                            } else {
+                                egui::Color32::from_rgb(200, 50, 50) // Rojo para 0
+                            };
+                            ui.label(
+                                RichText::new(c.to_string())
+                                    .size(36.0)
+                                    .color(color)
+                                    .strong()
+                                    .monospace()
+                            );
+                        }
+                    });
+                }
+            });
+        }
+    }
 }
 
 impl Game for BinariosGame {
@@ -240,24 +297,8 @@ impl Game for BinariosGame {
                         ui.label(format!("Tiempo: {:.1}s", remaining.as_secs_f32()));
                         ui.add_space(40.0);
 
-                        // Mostrar la secuencia binaria con colores distintivos
-                        ui.horizontal(|ui| {
-                            ui.add_space(ui.available_width() / 4.0);
-                            for c in self.current_sequence.chars() {
-                                let color = if c == '1' {
-                                    egui::Color32::from_rgb(50, 150, 50) // Verde para 1
-                                } else {
-                                    egui::Color32::from_rgb(200, 50, 50) // Rojo para 0
-                                };
-                                ui.label(
-                                    RichText::new(c.to_string())
-                                        .size(42.0)
-                                        .color(color)
-                                        .strong()
-                                        .monospace()
-                                );
-                            }
-                        });
+                        // Mostrar la secuencia organizada en columnas
+                        self.render_sequence_display(ui);
 
                         ui.add_space(40.0);
                         ui.label(format!("{} digitos", self.sequence_length));
@@ -413,7 +454,7 @@ impl Game for BinariosGame {
         let final_score = self.best_score as f32 + self.half_digit_bonus;
 
         Some(GameResult {
-            game_type: GameType::Binarios,
+            game_type: self.game_type,
             game_mode: self.config.mode,
             score: final_score,
             details: GameDetails::Binarios {

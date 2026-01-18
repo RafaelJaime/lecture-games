@@ -14,6 +14,7 @@ use std::time::Instant;
 
 pub struct DecimalesGame {
     config: GameConfig,
+    game_type: GameType,
     state: DecimalesState,
 
     // Secuencia actual
@@ -51,9 +52,15 @@ enum DecimalesState {
 impl DecimalesGame {
     pub fn new(config: GameConfig) -> Self {
         let initial_length = config.element_count;
+        // Determinar el game_type basado en el tiempo de exposición
+        let game_type = match config.exposure_time {
+            ExposureTime::FourSeconds => GameType::Decimales4s,
+            _ => GameType::Decimales1s,
+        };
 
         Self {
             config,
+            game_type,
             state: DecimalesState::Instructions,
             current_sequence: String::new(),
             sequence_length: initial_length,
@@ -166,6 +173,42 @@ impl DecimalesGame {
         ui.separator();
         ui.add_space(10.0);
     }
+
+    fn render_sequence_display(&self, ui: &mut egui::Ui) {
+        let cols = self.config.digit_columns;
+        let chars: Vec<char> = self.current_sequence.chars().collect();
+
+        // Si la secuencia es corta, mostrarla en una sola línea
+        if chars.len() <= cols {
+            ui.label(
+                RichText::new(&self.current_sequence)
+                    .size(48.0)
+                    .color(egui::Color32::from_rgb(50, 100, 200))
+                    .strong()
+                    .monospace()
+            );
+        } else {
+            // Dividir en filas según las columnas configuradas
+            ui.vertical(|ui| {
+                ui.spacing_mut().item_spacing.y = self.config.row_spacing;
+
+                for chunk in chars.chunks(cols) {
+                    ui.horizontal(|ui| {
+                        ui.spacing_mut().item_spacing.x = self.config.col_spacing;
+                        for c in chunk {
+                            ui.label(
+                                RichText::new(c.to_string())
+                                    .size(36.0)
+                                    .color(egui::Color32::from_rgb(50, 100, 200))
+                                    .strong()
+                                    .monospace()
+                            );
+                        }
+                    });
+                }
+            });
+        }
+    }
 }
 
 impl Game for DecimalesGame {
@@ -243,14 +286,8 @@ impl Game for DecimalesGame {
                         ui.label(format!("Tiempo: {:.1}s", remaining.as_secs_f32()));
                         ui.add_space(40.0);
 
-                        // Mostrar la secuencia con estilo grande
-                        ui.label(
-                            RichText::new(&self.current_sequence)
-                                .size(48.0)
-                                .color(egui::Color32::from_rgb(50, 100, 200))
-                                .strong()
-                                .monospace()
-                        );
+                        // Mostrar la secuencia organizada en columnas
+                        self.render_sequence_display(ui);
 
                         ui.add_space(40.0);
                         ui.label(format!("{} digitos", self.sequence_length));
@@ -405,7 +442,7 @@ impl Game for DecimalesGame {
         let final_score = self.best_score as f32 + self.half_digit_bonus;
 
         Some(GameResult {
-            game_type: GameType::Decimales,
+            game_type: self.game_type,
             game_mode: self.config.mode,
             score: final_score,
             details: GameDetails::Decimales {

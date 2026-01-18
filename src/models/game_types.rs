@@ -2,30 +2,57 @@
 
 use serde::{Deserialize, Serialize};
 
-/// Modo de juego
+/// Modo de juego según el README
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Default, Copy)]
 pub enum GameMode {
-    /// Competición: reglas estrictas, intentos limitados, mejor marca
-    Competition,
-    /// Entrenamiento: configurable, sin límites, práctica libre
+    /// Training: Entrenamiento libre con control total de parámetros
     #[default]
     Training,
+    /// Test: Ejecuta las 6 pruebas oficiales secuencialmente
+    Test,
+    /// Groups & Schools: Modo de competición para grupos con proyección
+    GroupsSchools,
+    /// Exhibition: Pruebas de memoria rápida no oficiales
+    Exhibition,
 }
 
 impl GameMode {
     pub fn name(&self) -> &str {
         match self {
-            GameMode::Competition => "Competición",
-            GameMode::Training => "Entrenamiento",
+            GameMode::Training => "Training",
+            GameMode::Test => "Test",
+            GameMode::GroupsSchools => "Groups & Schools",
+            GameMode::Exhibition => "Exhibition",
         }
     }
 
     pub fn description(&self) -> &str {
         match self {
-            GameMode::Competition => "Reglas oficiales de competición con intentos limitados",
-            GameMode::Training => "Practica libremente con configuración personalizada",
+            GameMode::Training => "Entrenamiento libre con control total de parametros",
+            GameMode::Test => "Ejecuta las 6 pruebas oficiales automaticamente",
+            GameMode::GroupsSchools => "Competicion para grupos con proyeccion compartida",
+            GameMode::Exhibition => "Pruebas de memoria rapida (0.5s) no oficiales",
         }
     }
+
+    /// Indica si el modo requiere Speed Test y datos del competidor
+    pub fn requires_competitor_data(&self) -> bool {
+        matches!(self, GameMode::Test | GameMode::GroupsSchools | GameMode::Exhibition)
+    }
+
+    /// Indica si el modo es secuencial (ejecuta todas las pruebas)
+    pub fn is_sequential(&self) -> bool {
+        matches!(self, GameMode::Test)
+    }
+}
+
+/// Datos del competidor
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct CompetitorData {
+    pub seat_number: String,
+    pub title: String,
+    pub name: String,
+    pub security_key: String,
 }
 
 /// Estado global de la aplicación
@@ -33,6 +60,10 @@ impl GameMode {
 pub enum AppState {
     /// Pantalla inicial de selección de modo
     ModeSelection,
+    /// Speed Test (para modos que lo requieren)
+    SpeedTest(GameMode),
+    /// Datos del competidor (para modos que lo requieren)
+    CompetitorInfo(GameMode),
     /// Selección de juego (con modo ya elegido)
     GameSelection(GameMode),
     /// Configuración del juego (solo en Training)
@@ -41,6 +72,8 @@ pub enum AppState {
     Playing(GameType, GameMode),
     /// Resultados
     Results,
+    /// Resultados del Test completo (6 pruebas)
+    TestResults,
     /// Historial
     History,
 }
@@ -50,45 +83,62 @@ pub enum AppState {
 pub enum GameType {
     /// Memorización visual de matrices (casillas blancas y azules)
     Matrices,
-    /// Memorización de secuencias binarias (0 y 1)
-    Binarios,
+    /// Memorización de secuencias binarias (0 y 1) - 1 segundo
+    Binarios1s,
+    /// Memorización de secuencias binarias (0 y 1) - 4 segundos
+    Binarios4s,
     /// Memorización de figuras geométricas con color
     FigurasColores,
-    /// Memorización de secuencias decimales (0-9)
-    Decimales,
-    /// Prueba de exhibición (0.5 segundos)
-    Exhibicion,
+    /// Memorización de secuencias decimales (0-9) - 1 segundo
+    Decimales1s,
+    /// Memorización de secuencias decimales (0-9) - 4 segundos
+    Decimales4s,
 }
 
 impl GameType {
     pub fn name(&self) -> &str {
         match self {
             GameType::Matrices => "Matrices",
-            GameType::Binarios => "Binarios",
+            GameType::Binarios1s => "Binarios (1s)",
+            GameType::Binarios4s => "Binarios (4s)",
             GameType::FigurasColores => "Figuras de Colores",
-            GameType::Decimales => "Decimales",
-            GameType::Exhibicion => "Exhibición",
+            GameType::Decimales1s => "Decimales (1s)",
+            GameType::Decimales4s => "Decimales (4s)",
         }
     }
 
     pub fn description(&self) -> &str {
         match self {
             GameType::Matrices => "Memoriza matrices de casillas blancas y azules",
-            GameType::Binarios => "Memoriza secuencias de números binarios (0 y 1)",
-            GameType::FigurasColores => "Memoriza figuras geométricas con sus colores",
-            GameType::Decimales => "Memoriza secuencias de dígitos decimales (0-9)",
-            GameType::Exhibicion => "Prueba rápida de exhibición (0.5 segundos)",
+            GameType::Binarios1s => "Secuencias binarias con 1 segundo de exposicion",
+            GameType::Binarios4s => "Secuencias binarias con 4 segundos de exposicion",
+            GameType::FigurasColores => "Memoriza figuras geometricas con sus colores",
+            GameType::Decimales1s => "Secuencias decimales con 1 segundo de exposicion",
+            GameType::Decimales4s => "Secuencias decimales con 4 segundos de exposicion",
         }
     }
 
-    /// Retorna todos los tipos de juegos disponibles
+    /// Retorna todos los tipos de juegos para Training
     pub fn all() -> Vec<GameType> {
         vec![
             GameType::Matrices,
-            GameType::Binarios,
+            GameType::Binarios1s,
+            GameType::Binarios4s,
             GameType::FigurasColores,
-            GameType::Decimales,
-            GameType::Exhibicion,
+            GameType::Decimales1s,
+            GameType::Decimales4s,
+        ]
+    }
+
+    /// Retorna las 6 pruebas oficiales en orden para Test
+    pub fn official_sequence() -> Vec<GameType> {
+        vec![
+            GameType::Matrices,
+            GameType::Binarios1s,
+            GameType::Binarios4s,
+            GameType::FigurasColores,
+            GameType::Decimales1s,
+            GameType::Decimales4s,
         ]
     }
 
@@ -96,10 +146,9 @@ impl GameType {
     pub fn competition_attempts(&self) -> usize {
         match self {
             GameType::Matrices => 2,
-            GameType::Binarios => 10,
+            GameType::Binarios1s | GameType::Binarios4s => 10,
             GameType::FigurasColores => 3,
-            GameType::Decimales => 10,
-            GameType::Exhibicion => 10,
+            GameType::Decimales1s | GameType::Decimales4s => 10,
         }
     }
 
@@ -108,11 +157,31 @@ impl GameType {
         use std::time::Duration;
         match self {
             GameType::Matrices => Duration::from_secs(6 * 60), // 6 minutos
-            GameType::Binarios => Duration::from_secs(0),       // Sin límite total
             GameType::FigurasColores => Duration::from_secs(3 * 60), // 3 minutos
-            GameType::Decimales => Duration::from_secs(0),      // Sin límite total
-            GameType::Exhibicion => Duration::from_secs(0),     // Sin límite total
+            _ => Duration::from_secs(0), // Sin límite total
         }
+    }
+
+    /// Retorna el tiempo de exposición asociado
+    pub fn exposure_time(&self) -> ExposureTime {
+        match self {
+            GameType::Binarios1s | GameType::Decimales1s => ExposureTime::OneSecond,
+            GameType::Binarios4s | GameType::Decimales4s => ExposureTime::FourSeconds,
+            _ => ExposureTime::OneSecond,
+        }
+    }
+
+    /// Indica si es una prueba de dígitos (binarios o decimales)
+    pub fn is_digit_test(&self) -> bool {
+        matches!(
+            self,
+            GameType::Binarios1s | GameType::Binarios4s | GameType::Decimales1s | GameType::Decimales4s
+        )
+    }
+
+    /// Indica si es binario
+    pub fn is_binary(&self) -> bool {
+        matches!(self, GameType::Binarios1s | GameType::Binarios4s)
     }
 }
 
@@ -157,7 +226,7 @@ impl ExposureTime {
     /// Umbral para aplicar sistema de medio dígito
     pub fn half_digit_threshold(&self) -> usize {
         match self {
-            ExposureTime::HalfSecond => 10, // Exhibición
+            ExposureTime::HalfSecond => 10,
             ExposureTime::OneSecond => 14,
             ExposureTime::FourSeconds => 20,
         }

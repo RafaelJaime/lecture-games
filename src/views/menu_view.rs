@@ -56,7 +56,7 @@ fn render_game_card(ui: &mut egui::Ui, controller: &mut AppController, game_type
 
                 ui.add_space(5.0);
 
-                if mode == GameMode::Competition {
+                if mode == GameMode::Test || mode == GameMode::GroupsSchools {
                     ui.label(format!(
                         "Intentos permitidos: {}",
                         game_type.competition_attempts()

@@ -233,6 +233,7 @@ pub struct FigurasColoresGame {
     // Timing
     start_time: Option<Instant>,
     figure_start_time: Option<Instant>,
+    is_blank_phase: bool, // Fase de tiempo en blanco entre figuras
 
     // Intentos
     current_attempt: usize,
@@ -267,6 +268,7 @@ impl FigurasColoresGame {
             current_answer_color: None,
             start_time: None,
             figure_start_time: None,
+            is_blank_phase: false,
             current_attempt: 1,
             best_score: 0,
             finished: false,
@@ -290,14 +292,24 @@ impl FigurasColoresGame {
         self.current_figure_index = 0;
         self.start_time = Some(Instant::now());
         self.figure_start_time = Some(Instant::now());
+        self.is_blank_phase = false;
         self.state = FigurasState::ShowingFigures;
     }
 
-    fn get_progressive_speed(&self, index: usize) -> std::time::Duration {
-        // La velocidad aumenta progresivamente
-        let base_ms = self.config.initial_speed_ms as f32;
-        let factor = 1.0 - (index as f32 * 0.03).min(0.4); // Reduce hasta 40%
-        std::time::Duration::from_millis((base_ms * factor) as u64)
+    fn get_display_time(&self, index: usize) -> std::time::Duration {
+        if self.config.constant_time {
+            // Tiempo constante para todas las figuras
+            std::time::Duration::from_millis(self.config.initial_speed_ms)
+        } else {
+            // La velocidad aumenta progresivamente
+            let base_ms = self.config.initial_speed_ms as f32;
+            let factor = 1.0 - (index as f32 * 0.03).min(0.4); // Reduce hasta 40%
+            std::time::Duration::from_millis((base_ms * factor) as u64)
+        }
+    }
+
+    fn get_blank_time(&self) -> std::time::Duration {
+        std::time::Duration::from_millis(self.config.figure_blank_time_ms)
     }
 
     fn draw_menu_button(&mut self, ui: &mut egui::Ui) {
@@ -369,6 +381,14 @@ impl Game for FigurasColoresGame {
                     ui.label(format!("Modo: {}", self.config.mode.name()));
                     ui.label(format!("Figuras: {}", self.config.element_count));
                     ui.label(format!("Velocidad inicial: {}ms", self.config.initial_speed_ms));
+                    if self.config.constant_time {
+                        ui.label("Velocidad: Constante");
+                    } else {
+                        ui.label("Velocidad: Progresiva (aumenta con cada figura)");
+                    }
+                    if self.config.figure_blank_time_ms > 0 {
+                        ui.label(format!("Tiempo en blanco entre figuras: {}ms", self.config.figure_blank_time_ms));
+                    }
                     ui.label(format!("Intentos: {}", self.config.max_attempts));
                 });
 
@@ -388,7 +408,14 @@ impl Game for FigurasColoresGame {
                     ui.add_space(20.0);
                     ui.label(format!("{} figuras", self.figures.len()));
                     ui.label(format!("Velocidad inicial: {}ms", self.config.initial_speed_ms));
-                    ui.label("La velocidad aumentara progresivamente");
+                    if self.config.constant_time {
+                        ui.label("Velocidad constante");
+                    } else {
+                        ui.label("La velocidad aumentara progresivamente");
+                    }
+                    if self.config.figure_blank_time_ms > 0 {
+                        ui.label(format!("Tiempo en blanco: {}ms", self.config.figure_blank_time_ms));
+                    }
                     ui.add_space(30.0);
 
                     if ui.button("Iniciar").clicked() {
@@ -399,40 +426,74 @@ impl Game for FigurasColoresGame {
 
             FigurasState::ShowingFigures => {
                 if let Some(figure_start) = self.figure_start_time {
-                    let display_time = self.get_progressive_speed(self.current_figure_index);
                     let elapsed = figure_start.elapsed();
 
-                    if elapsed >= display_time {
-                        self.current_figure_index += 1;
-                        if self.current_figure_index >= self.figures.len() {
-                            self.state = FigurasState::InputFigures;
-                            self.current_figure_index = 0;
-                            self.current_answer_shape = None;
-                            self.current_answer_color = None;
+                    if self.is_blank_phase {
+                        // Fase de tiempo en blanco
+                        let blank_time = self.get_blank_time();
+
+                        if elapsed >= blank_time {
+                            // Terminar fase de blank, mostrar siguiente figura
+                            self.is_blank_phase = false;
+                            self.figure_start_time = Some(Instant::now());
                             return;
                         }
-                        self.figure_start_time = Some(Instant::now());
-                        return;
-                    }
 
-                    let remaining = display_time - elapsed;
+                        // Mostrar pantalla en blanco
+                        ui.vertical_centered(|ui| {
+                            ui.add_space(80.0);
+                            ui.label(format!(
+                                "Figura {} de {}",
+                                self.current_figure_index + 1,
+                                self.figures.len()
+                            ));
+                            ui.add_space(50.0);
+                            ui.label("...");
+                        });
+                    } else {
+                        // Fase de mostrar figura
+                        let display_time = self.get_display_time(self.current_figure_index);
 
-                    ui.vertical_centered(|ui| {
-                        ui.add_space(20.0);
-                        ui.label(format!(
-                            "Figura {} de {}",
-                            self.current_figure_index + 1,
-                            self.figures.len()
-                        ));
-                        ui.label(format!("Tiempo: {:.2}s", remaining.as_secs_f32()));
-                        ui.add_space(30.0);
+                        if elapsed >= display_time {
+                            // Avanzar a siguiente figura o fase blank
+                            self.current_figure_index += 1;
+                            if self.current_figure_index >= self.figures.len() {
+                                self.state = FigurasState::InputFigures;
+                                self.current_figure_index = 0;
+                                self.current_answer_shape = None;
+                                self.current_answer_color = None;
+                                return;
+                            }
 
-                        if let Some(figure) = self.figures.get(self.current_figure_index) {
-                            figure.render(ui, 120.0);
+                            // Si hay blank time, entrar en fase blank
+                            if self.config.figure_blank_time_ms > 0 {
+                                self.is_blank_phase = true;
+                                self.figure_start_time = Some(Instant::now());
+                            } else {
+                                self.figure_start_time = Some(Instant::now());
+                            }
+                            return;
                         }
 
-                        ui.add_space(20.0);
-                    });
+                        let remaining = display_time - elapsed;
+
+                        ui.vertical_centered(|ui| {
+                            ui.add_space(20.0);
+                            ui.label(format!(
+                                "Figura {} de {}",
+                                self.current_figure_index + 1,
+                                self.figures.len()
+                            ));
+                            ui.label(format!("Tiempo: {:.2}s", remaining.as_secs_f32()));
+                            ui.add_space(30.0);
+
+                            if let Some(figure) = self.figures.get(self.current_figure_index) {
+                                figure.render(ui, 120.0);
+                            }
+
+                            ui.add_space(20.0);
+                        });
+                    }
                 }
             }
 

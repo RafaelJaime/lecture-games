@@ -1,10 +1,13 @@
-pub mod reading_speed;
-pub mod word_memory;
-pub mod text_comprehension;
-pub mod inumbs;
+//! Módulo de juegos - Implementaciones de las pruebas de memoria
+
+pub mod decimales;
+pub mod binarios;
+pub mod exhibicion;
+pub mod matrices;
+pub mod figuras_colores;
 
 // Re-exportar desde models
-pub use crate::models::{Difficulty, GameConfig, GameState, GameResult, GameDetails};
+pub use crate::models::{GameConfig, GameState, GameResult, GameDetails, ExposureTime};
 
 /// Trait común para todos los juegos
 pub trait Game {

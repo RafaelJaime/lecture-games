@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/claude-code) when working 
 
 ## Project Overview
 
-Superlectura Games is a Rust-based desktop application built with egui (Immediate Mode GUI) for creating educational games based on Tony Buzan's speed reading and memory techniques.
+Superlectura Games is a Rust-based desktop application built with egui (Immediate Mode GUI) for creating educational games based on speed reading and memory techniques.
 
 ## Build and Run Commands
 

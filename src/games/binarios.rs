@@ -25,6 +25,10 @@ pub struct BinariosGame {
     user_input: String,
     focus_input: bool,
 
+    // Fast mode: celdas individuales
+    fast_mode_cells: Vec<String>,
+    fast_mode_current_cell: usize,
+
     // Timing
     start_time: Option<Instant>,
 
@@ -66,6 +70,8 @@ impl BinariosGame {
             sequence_length: initial_length,
             user_input: String::new(),
             focus_input: false,
+            fast_mode_cells: Vec::new(),
+            fast_mode_current_cell: 0,
             start_time: None,
             current_attempt: 1,
             attempt_results: Vec::new(),
@@ -86,11 +92,19 @@ impl BinariosGame {
     fn start_attempt(&mut self) {
         self.current_sequence = Self::generate_sequence(self.sequence_length);
         self.user_input.clear();
+        // Inicializar celdas para fast mode
+        self.fast_mode_cells = vec![String::new(); self.sequence_length];
+        self.fast_mode_current_cell = 0;
         self.state = BinariosState::Ready;
     }
 
     fn check_answer(&mut self) {
-        let user_answer = self.user_input.trim().to_string();
+        // En fast mode, construir la respuesta desde las celdas
+        let user_answer = if self.config.fast_mode {
+            self.fast_mode_cells.join("")
+        } else {
+            self.user_input.trim().to_string()
+        };
         let correct = user_answer == self.current_sequence;
 
         let errors = if correct {
@@ -169,6 +183,109 @@ impl BinariosGame {
         });
         ui.separator();
         ui.add_space(10.0);
+    }
+
+    fn render_fast_mode_input(&mut self, ui: &mut egui::Ui) {
+        let cols = self.config.digit_columns;
+        let sequence_chars: Vec<char> = self.current_sequence.chars().collect();
+
+        ui.vertical(|ui| {
+            ui.spacing_mut().item_spacing.y = self.config.row_spacing;
+
+            let mut cell_idx = 0;
+            for chunk in sequence_chars.chunks(cols) {
+                ui.horizontal(|ui| {
+                    ui.spacing_mut().item_spacing.x = self.config.col_spacing;
+
+                    for (i, expected_char) in chunk.iter().enumerate() {
+                        let idx = cell_idx + i;
+                        if idx >= self.fast_mode_cells.len() {
+                            break;
+                        }
+
+                        let cell_value = &self.fast_mode_cells[idx];
+                        let is_filled = !cell_value.is_empty();
+                        let is_correct = cell_value == &expected_char.to_string();
+
+                        // Determinar color de fondo
+                        let bg_color = if is_filled {
+                            if is_correct {
+                                egui::Color32::from_rgb(50, 150, 50) // Verde
+                            } else {
+                                egui::Color32::from_rgb(200, 50, 50) // Rojo
+                            }
+                        } else if idx == self.fast_mode_current_cell {
+                            egui::Color32::from_rgb(100, 100, 200) // Azul (celda actual)
+                        } else {
+                            egui::Color32::from_gray(60)
+                        };
+
+                        let frame = egui::Frame::none()
+                            .fill(bg_color)
+                            .inner_margin(egui::Margin::same(8.0))
+                            .rounding(4.0);
+
+                        frame.show(ui, |ui| {
+                            let display_text = if is_filled {
+                                cell_value.clone()
+                            } else {
+                                "_".to_string()
+                            };
+
+                            ui.label(
+                                RichText::new(display_text)
+                                    .size(28.0)
+                                    .color(egui::Color32::WHITE)
+                                    .monospace()
+                            );
+                        });
+                    }
+                });
+                cell_idx += chunk.len();
+            }
+        });
+
+        ui.add_space(20.0);
+
+        // Capturar entrada de teclado (solo 0 y 1 para binarios)
+        let digit_pressed: Option<char> = ui.input(|i| {
+            if i.key_pressed(egui::Key::Num0) {
+                Some('0')
+            } else if i.key_pressed(egui::Key::Num1) {
+                Some('1')
+            } else {
+                None
+            }
+        });
+
+        let backspace_pressed = ui.input(|i| i.key_pressed(egui::Key::Backspace));
+
+        if let Some(digit) = digit_pressed {
+            if self.fast_mode_current_cell < self.fast_mode_cells.len() {
+                self.fast_mode_cells[self.fast_mode_current_cell] = digit.to_string();
+                self.fast_mode_current_cell += 1;
+
+                // Auto-confirmar si todas las celdas están llenas
+                if self.fast_mode_current_cell >= self.fast_mode_cells.len() {
+                    self.check_answer();
+                }
+            }
+        }
+
+        if backspace_pressed && self.fast_mode_current_cell > 0 {
+            self.fast_mode_current_cell -= 1;
+            self.fast_mode_cells[self.fast_mode_current_cell].clear();
+        }
+
+        ui.label(format!(
+            "Digitos: {}/{}",
+            self.fast_mode_cells.iter().filter(|c| !c.is_empty()).count(),
+            self.sequence_length
+        ));
+
+        ui.add_space(10.0);
+        ui.label("Escribe 0 o 1 con el teclado");
+        ui.label("Backspace para borrar");
     }
 
     fn render_sequence_display(&self, ui: &mut egui::Ui) {
@@ -318,25 +435,31 @@ impl Game for BinariosGame {
 
                 ui.add_space(20.0);
 
-                let text_edit = egui::TextEdit::singleline(&mut self.user_input)
-                    .desired_width(300.0)
-                    .font(egui::TextStyle::Heading)
-                    .hint_text("Escribe 0s y 1s...");
+                if self.config.fast_mode {
+                    // Fast mode: celdas individuales con corrección automática
+                    self.render_fast_mode_input(ui);
+                } else {
+                    // Modo estándar: campo de texto único
+                    let text_edit = egui::TextEdit::singleline(&mut self.user_input)
+                        .desired_width(300.0)
+                        .font(egui::TextStyle::Heading)
+                        .hint_text("Escribe 0s y 1s...");
 
-                let response = ui.add(text_edit);
+                    let response = ui.add(text_edit);
 
-                if self.focus_input {
-                    response.request_focus();
-                    self.focus_input = false;
-                }
+                    if self.focus_input {
+                        response.request_focus();
+                        self.focus_input = false;
+                    }
 
-                ui.add_space(10.0);
-                ui.label(format!("Digitos escritos: {}", self.user_input.len()));
+                    ui.add_space(10.0);
+                    ui.label(format!("Digitos escritos: {}", self.user_input.len()));
 
-                ui.add_space(20.0);
+                    ui.add_space(20.0);
 
-                if button_with_enter(ui, "Confirmar") && !self.user_input.is_empty() {
-                    self.check_answer();
+                    if button_with_enter(ui, "Confirmar") && !self.user_input.is_empty() {
+                        self.check_answer();
+                    }
                 }
             }
 
